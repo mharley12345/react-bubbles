@@ -1,71 +1,61 @@
-import React from 'react'
-import {withFormik, Form, Field} from 'formik'
-import * as Yup from 'yup';
-import {axiosWithAuth} from "../utils/axiosWithAuth"
+  
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { axiosWithAuth } from "../utils/axiosWithAuth";
 
+const Login = props => {
+  // make a post request to retrieve a token from the api
+  // when you have handled the token, navigate to the BubblePage route
+  const [login, setLogin] = useState({
+    username: "",
+    password: ""
+  });
 
- const LoginForm = ({ touched, errors, isSubmitting, values }) => {
-    return (
-        <Form>
-        <div className="input-group">
-            <div className="login-group" >
-               {touched.name && errors.name && <p>{errors.username}</p>}
-               <label htmlFor="username">Username: </label>
-                <Field
-                    type="text"
-                    name="username"
-                    placeholder="Username"
+  const handleChange = e => {
+    setLogin({ ...login, [e.target.name]: e.target.value });
+  };
 
-                />
-            </div>
-            <div className="login-group">
-            {touched.password && errors.password && <p>{errors.password}</p>}
-                <label htmlFor="password">Password: </label>
-                <Field
-                    type="password"
-                    name="password"
-                    placeholder="Password"
+  const handleSubmit = e => {
+    e.preventDefault();
+    console.log("Form entered this: ", login);
 
-                />
-            </div>
-     
-        </div>
-        <div>
-                {isSubmitting && <p>Loading...</p>}
-            <button
-                disabled={isSubmitting}
-                className="submit-button"
-                type="submit"
-            >
-                Submit
-            </button>
-        </div>
-        </Form>
-    )
-}
+    axiosWithAuth()
+      .post(`http://localhost:5000/api/login`, login)
+      .then(res => {
+        localStorage.setItem("token", res.data.payload);
+        props.history.push("/bubble");
+      })
+      .catch(err => console.log("Error in Login: ", err.response));
 
-const FormikLoginForm = withFormik({
-    mapPropsToValues() {
-       return{
-        username: "",
-        password: ""
-       };
-    },
+    setLogin({
+      username: "",
+      password: ""
+    });
+  };
 
-    validationSchema: Yup.object().shape({
-        username: Yup.string().required(),
-        password: Yup.string().min( 3, 'Password must be at least 3 characters').required('Password Required')
-    }),
+  return (
+    <>
+      <h1>Welcome to the Bubble App!</h1>
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          value={login.username}
+          name="username"
+          placeholder="Username"
+          onChange={handleChange}
+        />
+        <input
+          type="password"
+          value={login.password}
+          name="password"
+          placeholder="Password"
+          onChange={handleChange}
+        />
+        <button>Log In</button>
+      </form>
+      <Link to="/">Home Page</Link>
+    </>
+  );
+};
 
-    handleSubmit(values,formikBag){
-        const url = "/login"
-        return axiosWithAuth().post(url,values).then(res => {
-            localStorage.setItem("token", res.data.payload);
-            formikBag.props.history.push("/protected")
-            formikBag.resetForm()
-        })
-
-    },
-
-})(LoginForm);
-export default FormikLoginForm;
+export default Login;
